@@ -2,7 +2,6 @@ const { PeerRPCServer, PeerRPCClient } = require('grenache-nodejs-http');
 const Link = require('grenache-nodejs-link');
 const OrderBook = require('./orderbook');
 const { v4: uuidv4 } = require('uuid');
-const crypto = require('node:crypto');
 const minimist = require('minimist');
 
 // Parse command-line arguments
@@ -13,6 +12,7 @@ const CLIENT_ID_PREFIX = args.clientId || 'client';
 
 // Define service names as top-level constants
 const ORDERBOOK_SERVICE = 'orderbook_service';
+const ORDER_UPDATE_SERVICE = 'order_update_service';
 
 // Instantiate Link
 const link = new Link({
@@ -23,134 +23,140 @@ console.log('Instantiated Link:', link);
 // Start the link
 link.start();
 
-// Function to acquire a lock for an order ID
-async function acquireLock(orderId) {
-  return new Promise((resolve) => {
-    peerClient.request(
-      ORDERBOOK_SERVICE,
-      { action: 'acquire_lock', orderId },
-      { timeout: 5000 },
-      (err, data) => {
-        if (err || !data.success) {
-          console.error(`Error acquiring lock for order ${orderId}:`, err);
-          resolve(false);
-        } else {
-          console.log(`Lock acquired for order ${orderId}.`);
-          resolve(true);
-        }
-      }
-    );
-  });
-}
-
-// Function to release a lock for an order ID
-async function releaseLock(orderId) {
-  return new Promise((resolve) => {
-    peerClient.request(
-      ORDERBOOK_SERVICE,
-      { action: 'release', orderId },
-      { timeout: 5000 },
-      (err, data) => {
-        if (err) {
-          console.error(`Error releasing lock for order ${orderId}:`, err);
-          resolve(false);
-        } else {
-          console.log(`Lock released for order ${orderId}.`);
-          resolve(true);
-        }
-      }
-    );
-  });
-}
-
 // Function to broadcast an order update
-async function broadcastOrderUpdate(order, orderIndex) {
-  return new Promise((resolve) => {
-    peerClient.map(
-      ORDERBOOK_SERVICE,
-      { type: 'update', order, orderIndex },
-      { timeout: 10000 },
-      (err) => {
-        if (err) {
-          console.error('Error broadcasting order update:', err);
-          resolve(false);
-        } else {
-          console.log(`Order update broadcast for order ${order.id}.`);
-          resolve(true);
-        }
+async function broadcastOrderUpdate(delta) {
+  // Implement broadcasting logic here, e.g., send to all connected peers
+  // Using 'map' to broadcast to all instances of ORDERBOOK_SERVICE
+  peerClient.map(
+    ORDERBOOK_SERVICE,
+    { type: 'delta', delta },
+    { timeout: 10000 },
+    (err) => {
+      if (err) {
+        console.error('Error broadcasting order update:', err);
+      } else {
+        console.log(`Order update broadcast: ${JSON.stringify(delta)}`);
       }
-    );
-  });
+    }
+  );
 }
 
-// Instantiate OrderBook with lock functions
-const orderBook = new OrderBook(acquireLock, releaseLock, broadcastOrderUpdate);
-
-// Initialize PeerRPCClient
+// Initialize PeerRPCClient to communicate with Order Book Server
 const peerClient = new PeerRPCClient(link, {});
 peerClient.init();
 
-const peerServer = new PeerRPCServer(link, {
-  timeout: 300000,
-});
-peerServer.init();
+// Initialize OrderBook with broadcast function
+const orderBook = new OrderBook(broadcastOrderUpdate);
 
-const port = 1024 + Math.floor(Math.random() * 1000);
-const service = peerServer.transport('server');
-service.listen(port);
+// Function to start client operations
+function startClientOperations() {
+  const peerServer = new PeerRPCServer(link, {
+    timeout: 300000,
+  });
+  peerServer.init();
 
-const clientId = `${CLIENT_ID_PREFIX}_${port}`;
+  const port = 1024 + Math.floor(Math.random() * 1000);
+  const service = peerServer.transport('server');
+  service.listen(port);
 
-// Announce the orderbook service
-setInterval(() => {
-  link.announce(ORDERBOOK_SERVICE, service.port, {});
-}, 1000);
+  const clientId = `${CLIENT_ID_PREFIX}_${port}`;
 
-// Handle incoming requests from other clients
-service.on('request', async (rid, key, payload, handler) => {
-  if (payload.type === 'updated') {
-    orderBook.updateOrder(payload.order, payload.orderIndex);
-  } else if (payload.type === 'acquire_lock') {
-    const isLocked = await orderBook.lockedOrders.has(payload.orderId);
-    if (!isLocked) {
-      orderBook.lockedOrders.add(payload.orderId);
+  // Announce the orderbook service
+  setInterval(() => {
+    link.announce(ORDERBOOK_SERVICE, service.port, {});
+  }, 1000);
+
+  // Register the client with the Order Book Server for updates
+  registerClient(clientId, port);
+
+  // Handle incoming deltas from the Order Book Server
+  service.on('request', async (rid, key, payload, handler) => {
+    if (payload.type === 'delta') {
+      const delta = payload.delta;
+      applyDelta(delta);
+      console.log(`Received delta: ${JSON.stringify(delta)}`);
+      handler.reply(null, { status: 'delta_received' });
+    } else if (payload.type === 'full_sync') {
+      const orderBookData = payload.orderBook;
+      synchronizeOrderBook(orderBookData);
+      console.log('Received full order book sync.');
+      handler.reply(null, { status: 'full_sync_received' });
+    } else {
+      handler.reply(new Error('Unknown request type'));
     }
+  });
 
-    isLocked ? handler.reply(null, { success: true }) : handler.reply(null, { success: false });
-  } else if (payload.type === 'release') {
-    orderBook.lockedOrders.delete(payload.orderId);
-    handler.reply(null, { success: true });
+  // Start submitting orders
+  submitOrders(peerClient, clientId, NUM_ORDERS, ORDER_INTERVAL);
+
+  // Optionally, display local order book for debugging
+  setInterval(() => {
+    console.log(`\nOrder Book for ${clientId}:`);
+    console.log(JSON.stringify(orderBook.toJSON(), null, 2));
+  }, 10000);
+}
+
+// Function to register the client with the Order Book Server
+function registerClient(clientId, port) {
+  peerClient.request(
+    ORDERBOOK_SERVICE,
+    {
+      type: 'register_client',
+      clientInfo: {
+        host: '127.0.0.1', // Replace with your client host if different
+        port: port,
+        clientId: clientId,
+      },
+    },
+    { timeout: 5000 },
+    (err, data) => {
+      if (err) {
+        console.error('Error registering client:', err);
+      } else {
+        console.log('Client registration successful:', data);
+      }
+    }
+  );
+}
+
+// Function to apply a delta to the local order book
+function applyDelta(delta) {
+  if (delta.type === 'add') {
+    const { order, index } = delta;
+    if (order.type === 'buy') {
+      orderBook.buys[index] = order;
+    } else if (order.type === 'sell') {
+      orderBook.sells[index] = order;
+    }
+    console.log(`Order added: ${JSON.stringify(order)}`);
+  } else if (delta.type === 'match') {
+    const { buyOrderId, sellOrderId, quantity, price, buyer, seller } = delta;
+    // Implement matching logic on the client-side if necessary
+    console.log(`Order matched: ${quantity} @ ${price} between ${buyer} and ${seller}`);
+    // Optionally, update or remove orders from the local order book
   }
-});
+}
 
-// Start submitting orders
-submitOrders(peerClient, clientId, NUM_ORDERS, ORDER_INTERVAL);
-
-// // Optionally, display local order book for debugging
-// setInterval(() => {
-//   console.log(`\nOrder Book for ${clientId}:`);
-//   console.log(JSON.stringify(orderBook.toJSON(), null, 2));
-// }, 10000);
+// Function to synchronize the entire order book (initial sync)
+function synchronizeOrderBook(orderBookData) {
+  orderBook.buys = orderBookData.buys;
+  orderBook.sells = orderBookData.sells;
+  console.log('Order book synchronized.');
+}
 
 // Function to submit an order
 async function submitOrder(peerClient, clientId, order) {
   await orderBook.addOrder(order);
   console.log(`Order ${order.id} added to local order book.`);
 
-  // Distribute order to other clients
-  peerClient.map(
-    ORDERBOOK_SERVICE,
-    { type: 'order', order },
-    { timeout: 10000 },
-    async (err) => {
-      if (err) {
-        console.error('Error distributing order:', err);
-      } else {
-        console.log(`Order ${order.id} distributed to peers`);
-      }
-      await orderBook.releaseLock(order.id);
-    }
-  );
+  // Distribute order to other clients by broadcasting the delta
+  const delta = {
+    type: 'add',
+    order: order,
+    index: order.type === 'buy' ? orderBook.buys.length - 1 : orderBook.sells.length - 1,
+  };
+  await broadcastOrderUpdate(delta);
+  console.log(`Order ${order.id} broadcasted to peers.`);
 }
 
 // Function to submit multiple orders
@@ -175,3 +181,8 @@ function submitOrders(peerClient, clientId, numOrders, interval) {
     ordersSubmitted++;
   }, interval);
 }
+
+// Start client operations after a short delay to ensure services are up
+setTimeout(() => {
+  startClientOperations();
+}, 2000);

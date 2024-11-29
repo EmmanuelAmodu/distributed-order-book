@@ -20,8 +20,6 @@ for (let i = 0; i < NUM_CLIENTS; i++) {
       ORDERS_PER_CLIENT,
       '--interval',
       ORDER_INTERVAL,
-      '--sync',
-      'true', // Enable sync during load test for cross-client matching
       '--clientId',
       clientId,
     ], {
@@ -45,9 +43,19 @@ for (let i = 0; i < NUM_CLIENTS; i++) {
       if (clientsCompleted === NUM_CLIENTS) {
         const endTime = Date.now();
         console.log(`Load test completed in ${(endTime - startTime) / 1000} seconds.`);
+        // No need to terminate lock service as it's removed
       }
     });
 
     clients.push(clientProcess);
   }, i * 1000);
 }
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+  console.log('Terminating all client processes...');
+  for (const client of clients) {
+    client.kill('SIGINT');
+  }
+  process.exit();
+});
