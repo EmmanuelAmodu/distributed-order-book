@@ -1,0 +1,184 @@
+Starting load test with 5 clients...
+Starting the lock service...
+[Lock Service]: Lock service link connected.
+
+Lock service is ready. Starting clients...
+[client_1]: Instantiated Link: Link {
+  conf: {
+    grape: 'http://127.0.0.1:30001',
+    monitorTimeout: 2000,
+    requestTimeout: 2500,
+    lruMaxSizeLookup: 2500,
+    lruMaxAgeLookup: 10000
+  }
+}
+
+[client_5]: Instantiated Link: Link {
+  conf: {
+    grape: 'http://127.0.0.1:30001',
+    monitorTimeout: 2000,
+    requestTimeout: 2500,
+    lruMaxSizeLookup: 2500,
+    lruMaxAgeLookup: 10000
+  }
+}
+
+[client_2]: Instantiated Link: Link {
+  conf: {
+    grape: 'http://127.0.0.1:30001',
+    monitorTimeout: 2000,
+    requestTimeout: 2500,
+    lruMaxSizeLookup: 2500,
+    lruMaxAgeLookup: 10000
+  }
+}
+
+[client_4]: Instantiated Link: Link {
+  conf: {
+    grape: 'http://127.0.0.1:30001',
+    monitorTimeout: 2000,
+    requestTimeout: 2500,
+    lruMaxSizeLookup: 2500,
+    lruMaxAgeLookup: 10000
+  }
+}
+
+[client_3]: Instantiated Link: Link {
+  conf: {
+    grape: 'http://127.0.0.1:30001',
+    monitorTimeout: 2000,
+    requestTimeout: 2500,
+    lruMaxSizeLookup: 2500,
+    lruMaxAgeLookup: 10000
+  }
+}
+
+[Lock Service]: Received request: {"action":"test"}
+
+[client_1]: Lock service communication successful: { success: true, message: 'Lock service is reachable' }
+
+[Lock Service]: Received request: {"action":"test"}
+
+[Lock Service]: Received request: {"action":"test"}
+
+[client_2]: Lock service communication successful: { success: true, message: 'Lock service is reachable' }
+
+[Lock Service]: Received request: {"action":"test"}
+
+[Lock Service]: Received request: {"action":"test"}
+
+[client_3]: Lock service communication successful: { success: true, message: 'Lock service is reachable' }
+
+[client_5]: Lock service communication successful: { success: true, message: 'Lock service is reachable' }
+
+[client_4]: Lock service communication successful: { success: true, message: 'Lock service is reachable' }
+
+[client_1]: Submitting order: {"id":"08398d02-6b3f-4d5a-b0ba-ebcdb11102eb","clientId":"client_1_1691","type":"buy","price":96,"quantity":1}
+
+[client_5]: Submitting order: {"id":"0668ff28-e214-4303-9391-102cd6be012b","clientId":"client_5_1038","type":"sell","price":75,"quantity":9}
+
+[client_3]: Submitting order: {"id":"770c0b72-fe3a-4de9-a40e-fd9d2d953285","clientId":"client_3_1696","type":"sell","price":22,"quantity":10}
+
+[client_4]: Submitting order: {"id":"8e3b2e00-2368-40b6-b3a8-177428d082d8","clientId":"client_4_1747","type":"buy","price":40,"quantity":7}
+
+[client_2]: Submitting order: {"id":"aa1782e5-441e-474b-b453-91d418fdbb3e","clientId":"client_2_1466","type":"buy","price":22,"quantity":10}
+
+client_1 exited with code 1
+client_5 exited with code 1
+client_4 exited with code 1
+client_2 exited with code 1
+client_3 exited with code 1
+Load test completed in 1.31 seconds.
+Lock service exited with code null
+Starting load test with 5 clients...
+Starting the lock service...
+[Lock Service]: Lock service link connected.
+
+Lock service is ready. Starting clients...
+[client_5]: Instantiated Link: Link {
+  conf: {
+    grape: 'http://127.0.0.1:30001',
+    monitorTimeout: 2000,
+    requestTimeout: 2500,
+    lruMaxSizeLookup: 2500,
+    lruMaxAgeLookup: 10000
+  }
+}
+
+[client_2]: Instantiated Link: Link {
+  conf: {
+    grape: 'http://127.0.0.1:30001',
+    monitorTimeout: 2000,
+    requestTimeout: 2500,
+    lruMaxSizeLookup: 2500,
+    lruMaxAgeLookup: 10000
+  }
+}
+
+[client_3]: Instantiated Link: Link {
+  conf: {
+    grape: 'http://127.0.0.1:30001',
+    monitorTimeout: 2000,
+    requestTimeout: 2500,
+    lruMaxSizeLookup: 2500,
+    lruMaxAgeLookup: 10000
+  }
+}
+
+[client_1]: Instantiated Link: Link {
+  conf: {
+    grape: 'http://127.0.0.1:30001',
+    monitorTimeout: 2000,
+    requestTimeout: 2500,
+    lruMaxSizeLookup: 2500,
+    lruMaxAgeLookup: 10000
+  }
+}
+
+[client_4]: Instantiated Link: Link {
+  conf: {
+    grape: 'http://127.0.0.1:30001',
+    monitorTimeout: 2000,
+    requestTimeout: 2500,
+    lruMaxSizeLookup: 2500,
+    lruMaxAgeLookup: 10000
+  }
+}
+
+[Lock Service]: Received request: {"action":"test"}
+
+[Lock Service]: Received request: {"action":"test"}
+
+[client_3]: Lock service communication successful: { success: true, message: 'Lock service is reachable' }
+
+[Lock Service]: Received request: {"action":"test"}
+
+[client_5]: Lock service communication successful: { success: true, message: 'Lock service is reachable' }
+
+[Lock Service]: Received request: {"action":"test"}
+
+[Lock Service]: Received request: {"action":"test"}
+
+[client_4]: Lock service communication successful: { success: true, message: 'Lock service is reachable' }
+
+[client_2]: Lock service communication successful: { success: true, message: 'Lock service is reachable' }
+
+[client_1]: Lock service communication successful: { success: true, message: 'Lock service is reachable' }
+
+[client_3]: Submitting order: {"id":"4ee20660-1195-49b5-9598-2faa39156c8a","clientId":"client_3_1574","type":"buy","price":13,"quantity":9}
+
+[client_1]: Submitting order: {"id":"5fd80bb0-14c8-4ae6-98ac-ea6c671f0d45","clientId":"client_1_1454","type":"buy","price":70,"quantity":1}
+
+[client_2]: Submitting order: {"id":"d5603e5a-809f-43a7-b6ba-5afdab93771f","clientId":"client_2_1535","type":"sell","price":63,"quantity":9}
+
+[client_5]: Submitting order: {"id":"7c727652-b36a-4916-99cf-d598d9f69e87","clientId":"client_5_1367","type":"sell","price":60,"quantity":4}
+
+[client_4]: Submitting order: {"id":"87a155b5-5023-47b6-8298-4938301fc4df","clientId":"client_4_1951","type":"sell","price":79,"quantity":4}
+
+client_3 exited with code 1
+client_5 exited with code 1
+client_1 exited with code 1
+client_2 exited with code 1
+client_4 exited with code 1
+Load test completed in 1.276 seconds.
+Lock service exited with code null

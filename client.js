@@ -9,7 +9,6 @@ const minimist = require('minimist');
 const args = minimist(process.argv.slice(2));
 const NUM_ORDERS = Number.parseInt(args.orders, 10) || 100; // Number of orders to submit
 const ORDER_INTERVAL = Number.parseInt(args.interval, 10) || 100; // Interval between orders in ms
-const SYNC_ENABLED = args.sync !== 'false'; // Enable or disable order book sync
 const CLIENT_ID_PREFIX = args.clientId || 'client';
 
 // Define service names as top-level constants
@@ -65,6 +64,26 @@ async function releaseLock(orderId) {
   });
 }
 
+// Function to broadcast an order update
+async function broadcastOrderUpdate(order, orderIndex) {
+  return new Promise((resolve) => {
+    peerClient.map(
+      ORDERBOOK_SERVICE,
+      { type: 'update', order, orderIndex },
+      { timeout: 10000 },
+      (err) => {
+        if (err) {
+          console.error('Error broadcasting order update:', err);
+          resolve(false);
+        } else {
+          console.log(`Order update broadcast for order ${order.id}.`);
+          resolve(true);
+        }
+      }
+    );
+  });
+}
+
 // Instantiate OrderBook with lock functions
 let orderBook;
 
@@ -84,8 +103,8 @@ peerClient.request(
     } else {
       console.log('Lock service communication successful:', data);
 
-      // Initialize OrderBook with lock functions
-      orderBook = new OrderBook(acquireLock, releaseLock);
+      // Initialize OrderBook with util functions
+      orderBook = new OrderBook(acquireLock, releaseLock, broadcastOrderUpdate);
 
       // Proceed with initializing the peer server and client operations
       startClientOperations();
@@ -198,70 +217,4 @@ function submitOrders(peerClient, clientId, numOrders, interval) {
     await submitOrder(peerClient, clientId, order);
     ordersSubmitted++;
   }, interval);
-}
-
-// Function to sync order books with peers
-async function syncOrderBook() {
-  peerClient.map(
-    ORDERBOOK_SERVICE,
-    { type: 'sync' },
-    { timeout: 10000 },
-    async (err, data) => {
-      if (err) {
-        console.error('Error syncing order books:', err);
-      } else {
-        for (const response of data) {
-          if (response?.orderBook) {
-            await mergeOrderBooks(response.orderBook);
-          }
-        }
-        console.log(`Order books synced with peers at ${new Date().toISOString()}`);
-      }
-    }
-  );
-}
-
-// Function to merge remote order books into the local order book
-async function mergeOrderBooks(remoteOrderBookData) {
-  // Merge buy orders
-  for (const remoteOrder of remoteOrderBookData.buys) {
-    if (
-      !orderBook.buys.find(
-        (localOrder) => localOrder.id === remoteOrder.id
-      )
-    ) {
-      const lockAcquired = await orderBook.acquireLock(remoteOrder.id);
-      if (!lockAcquired) {
-        console.log(`Could not acquire lock to merge buy order ${remoteOrder.id}. Skipping.`);
-        continue;
-      }
-
-      orderBook.buys.push(remoteOrder);
-      orderBook.processedOrders.add(remoteOrder.id);
-      console.log(`Merged buy order from ${remoteOrder.clientId}: ${JSON.stringify(remoteOrder)}`);
-
-      await orderBook.releaseLock(remoteOrder.id);
-    }
-  }
-
-  // Merge sell orders
-  for (const remoteOrder of remoteOrderBookData.sells) {
-    if (
-      !orderBook.sells.find(
-        (localOrder) => localOrder.id === remoteOrder.id
-      )
-    ) {
-      const lockAcquired = await orderBook.acquireLock(remoteOrder.id);
-      if (!lockAcquired) {
-        console.log(`Could not acquire lock to merge sell order ${remoteOrder.id}. Skipping.`);
-        continue;
-      }
-
-      orderBook.sells.push(remoteOrder);
-      orderBook.processedOrders.add(remoteOrder.id);
-      console.log(`Merged sell order from ${remoteOrder.clientId}: ${JSON.stringify(remoteOrder)}`);
-
-      await orderBook.releaseLock(remoteOrder.id);
-    }
-  }
 }
