@@ -1,18 +1,14 @@
 class OrderBook {
+  lockedOrders = new Set();
+  buys = [];
+  sells = [];
   /**
    * Initializes the OrderBook with external lock and unlock functions.
    * @param {Function} acquireLockFn - Function to acquire a lock for an order ID.
    * @param {Function} releaseLockFn - Function to release a lock for an order ID.
    * @param {Function} broadcastOrderUpdateFn - Function to broadcast an order update.
    */
-
   constructor(acquireLockFn, releaseLockFn, broadcastOrderUpdateFn) {
-    this.buys = [];
-    this.sells = [];
-
-    // this.processedOrders = new Set(); // Track processed orders
-    this.lockedOrders = new Set(); // Track locally locked orders
-
     // External lock functions
     this.acquireLock = acquireLockFn;
     this.releaseLock = releaseLockFn;
@@ -20,9 +16,22 @@ class OrderBook {
   }
 
   async updateOrder(order, orderIndex) {
-    if (orderIndex !== -1) {
-      const orderType = order.type === 'buy' ? this.buys : this.sells;
+    if (orderIndex === -1) {
+      return;
+    }
+
+    const orderType = order.type === 'buy' ? this.buys : this.sells;
+    if (order.quantity === 0) {
+      orderType.splice(orderIndex, 1);
+    } else {
       orderType[orderIndex] = order;
+    }
+  }
+
+  async _updateOrderInternal(order, orderIndex) {
+    if (orderIndex !== -1) {
+      updateOrder(order, orderIndex);
+  
       await this.broadcastOrderUpdate(order, orderIndex);
       await this.releaseLock(oppositeOrder.id);
       return orderIndex;
@@ -46,7 +55,7 @@ class OrderBook {
       return;
     }
 
-    const index = await this.updateOrder(order, -1);
+    const index = await this._updateOrderInternal(order, -1);
     if (order.type === 'buy') {
       await this.matchOrder(order, this.sells, this.buys, index);
     } else if (order.type === 'sell') {
@@ -102,8 +111,8 @@ class OrderBook {
         remainingQuantity -= tradedQuantity;
         oppositeOrder.quantity -= tradedQuantity;
 
-        await this.updateOrder(order, index);
-        await this.updateOrder(oppositeOrder, i);
+        await this._updateOrderInternal(order, index);
+        await this._updateOrderInternal(oppositeOrder, i);
 
         if (oppositeOrder.quantity === 0) {
           oppositeOrders.splice(i, 1);

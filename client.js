@@ -13,7 +13,6 @@ const CLIENT_ID_PREFIX = args.clientId || 'client';
 
 // Define service names as top-level constants
 const ORDERBOOK_SERVICE = 'orderbook_service';
-const LOCK_SERVICE = 'lock_service';
 
 // Instantiate Link
 const link = new Link({
@@ -28,8 +27,8 @@ link.start();
 async function acquireLock(orderId) {
   return new Promise((resolve) => {
     peerClient.request(
-      LOCK_SERVICE,
-      { action: 'acquire', orderId },
+      ORDERBOOK_SERVICE,
+      { action: 'acquire_lock', orderId },
       { timeout: 5000 },
       (err, data) => {
         if (err || !data.success) {
@@ -48,7 +47,7 @@ async function acquireLock(orderId) {
 async function releaseLock(orderId) {
   return new Promise((resolve) => {
     peerClient.request(
-      LOCK_SERVICE,
+      ORDERBOOK_SERVICE,
       { action: 'release', orderId },
       { timeout: 5000 },
       (err, data) => {
@@ -85,98 +84,56 @@ async function broadcastOrderUpdate(order, orderIndex) {
 }
 
 // Instantiate OrderBook with lock functions
-let orderBook;
+const orderBook = new OrderBook(acquireLock, releaseLock, broadcastOrderUpdate);
 
 // Initialize PeerRPCClient
 const peerClient = new PeerRPCClient(link, {});
 peerClient.init();
 
-// Test communication with lock service
-peerClient.request(
-  LOCK_SERVICE,
-  { action: 'test' },
-  { timeout: 5000 },
-  async (err, data) => {
-    if (err) {
-      console.error('Error communicating with lock service:', err);
-      process.exit(1);
-    } else {
-      console.log('Lock service communication successful:', data);
+const peerServer = new PeerRPCServer(link, {
+  timeout: 300000,
+});
+peerServer.init();
 
-      // Initialize OrderBook with util functions
-      orderBook = new OrderBook(acquireLock, releaseLock, broadcastOrderUpdate);
+const port = 1024 + Math.floor(Math.random() * 1000);
+const service = peerServer.transport('server');
+service.listen(port);
 
-      // Proceed with initializing the peer server and client operations
-      startClientOperations();
+const clientId = `${CLIENT_ID_PREFIX}_${port}`;
+
+// Announce the orderbook service
+setInterval(() => {
+  link.announce(ORDERBOOK_SERVICE, service.port, {});
+}, 1000);
+
+// Handle incoming requests from other clients
+service.on('request', async (rid, key, payload, handler) => {
+  if (payload.type === 'updated') {
+    orderBook.updateOrder(payload.order, payload.orderIndex);
+  } else if (payload.type === 'acquire_lock') {
+    const isLocked = await orderBook.lockedOrders.has(payload.orderId);
+    if (!isLocked) {
+      orderBook.lockedOrders.add(payload.orderId);
     }
+
+    isLocked ? handler.reply(null, { success: true }) : handler.reply(null, { success: false });
+  } else if (payload.type === 'release') {
+    orderBook.lockedOrders.delete(payload.orderId);
+    handler.reply(null, { success: true });
   }
-);
+});
 
-// Function to start client operations
-function startClientOperations() {
-  const peerServer = new PeerRPCServer(link, {
-    timeout: 300000,
-  });
-  peerServer.init();
+// Start submitting orders
+submitOrders(peerClient, clientId, NUM_ORDERS, ORDER_INTERVAL);
 
-  const port = 1024 + Math.floor(Math.random() * 1000);
-  const service = peerServer.transport('server');
-  service.listen(port);
-
-  const clientId = `${CLIENT_ID_PREFIX}_${port}`;
-
-  // Announce the orderbook service
-  setInterval(() => {
-    link.announce(ORDERBOOK_SERVICE, service.port, {});
-  }, 1000);
-
-  // Handle incoming requests from other clients
-  service.on('request', async (rid, key, payload, handler) => {
-    if (payload.type === 'order') {
-      const order = payload.order;
-      const lockAcquired = await orderBook.acquireLock(order.id);
-      if (!lockAcquired) {
-        console.log(`Failed to acquire lock for order ${order.id}`);
-        handler.reply(null, { status: 'lock_failed' });
-        return;
-      }
-
-      console.log(`Processing order ${order.id} from ${order.clientId}`);
-      await orderBook.addOrder(order);
-      await orderBook.releaseLock(order.id);
-      handler.reply(null, { status: 'order_processed' });
-    } else if (payload.type === 'sync') {
-      handler.reply(null, { orderBook: orderBook.toJSON() });
-    } else {
-      handler.reply(new Error('Unknown request type'));
-    }
-  });
-
-  // Start submitting orders
-  submitOrders(peerClient, clientId, NUM_ORDERS, ORDER_INTERVAL);
-
-  // Periodically sync order books if enabled
-  // if (SYNC_ENABLED) {
-  //   setInterval(() => {
-  //     syncOrderBook();
-  //   }, 15000);
-  // }
-
-  // Optionally, display local order book for debugging
-  setInterval(() => {
-    console.log(`\nOrder Book for ${clientId}:`);
-    console.log(JSON.stringify(orderBook.toJSON(), null, 2));
-  }, 10000);
-}
+// // Optionally, display local order book for debugging
+// setInterval(() => {
+//   console.log(`\nOrder Book for ${clientId}:`);
+//   console.log(JSON.stringify(orderBook.toJSON(), null, 2));
+// }, 10000);
 
 // Function to submit an order
 async function submitOrder(peerClient, clientId, order) {
-  const lockAcquired = await orderBook.acquireLock(order.id);
-  if (!lockAcquired) {
-    console.log(`Failed to acquire lock for order ${order.id}`);
-    return;
-  }
-
   await orderBook.addOrder(order);
   console.log(`Order ${order.id} added to local order book.`);
 
