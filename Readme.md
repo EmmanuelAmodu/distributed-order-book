@@ -4,14 +4,14 @@ Welcome to the Distributed Order Book assessment! This README provides all the n
 
 Table of Contents
 
-	1.	Project Overview
-	2.	Prerequisites
-	3.	Installation
-	4.	Configuration
-	5.	Running the Application
-	6.	Testing
-	7.	Troubleshooting
-	8.	Additional Resources
+1. Project Overview
+2. Prerequisites
+3. Installation
+4. Configuration
+5. Running the Application
+6. Testing
+7. Troubleshooting
+8. Additional Resources
 
 Project Overview
 
@@ -20,10 +20,10 @@ The Distributed Order Book is a Node.js application that simulates a decentraliz
 Prerequisites
 
 Before you begin, ensure you have the following installed on your machine:
-	•	Node.js (v14.x or later)
-	•	npm (Node Package Manager)
-	•	Git
-	•	Grenache (for peer-to-peer communication)
+•	Node.js (v14.x or later)
+•	npm (Node Package Manager)
+•	Git
+•	Grenache (for peer-to-peer communication)
 
 Install Node.js and npm
 
@@ -43,13 +43,13 @@ npm install -g grenache
 Installation
 
 Follow these steps to set up the project on your local machine.
-	1.	Clone the Repository
+1.	Clone the Repository
 
 git clone https://github.com/your-username/distributed-order-book.git
 cd distributed-order-book
 
 
-	2.	Install Dependencies
+2.	Install Dependencies
 Navigate to the project directory and install the necessary Node.js packages.
 
 npm install
@@ -90,43 +90,38 @@ The application consists of multiple client instances that simulate different us
 Start Client Instances
 
 Open separate terminal windows or tabs for each client and navigate to the project directory.
-	1.	Client 1
+
+1.	Client 1
 
 PORT=1139 npm run client -- client_1
 
-
-	2.	Client 2
+2.	Client 2
 
 PORT=1398 npm run client -- client_2
 
-
-	3.	Client 3
+3.	Client 3
 
 PORT=1716 npm run client -- client_3
 
-
-	4.	Client 4
+4.	Client 4
 
 PORT=1825 npm run client -- client_4
 
-
-	5.	Client 5
+5.	Client 5
 
 PORT=1934 npm run client -- client_5
-
-
 
 Ensure each client is started with the correct port as specified in the .env file.
 
 Available Scripts
 
-	•	Start Clients
+•	Start Clients
 The client script starts a client instance. Replace <client_id> with client_1, client_2, etc.
 
 npm run client -- <client_id>
 
 
-	•	Start All Clients
+•	Start All Clients
 Optionally, you can create a script to start all clients simultaneously using tools like concurrently.
 
 Testing
@@ -136,7 +131,7 @@ Once all clients and the Grenache router are running, you can begin testing the 
 Submit Orders
 
 Each client can submit buy and sell orders by entering JSON-formatted commands. Below are examples of how to submit orders.
-	1.	Buy Order
+1.	Buy Order
 
 {
   "id": "unique-order-id",
@@ -147,7 +142,7 @@ Each client can submit buy and sell orders by entering JSON-formatted commands. 
 }
 
 
-	2.	Sell Order
+2.	Sell Order
 
 {
   "id": "unique-order-id",
@@ -167,17 +162,17 @@ Each client maintains a local copy of the order book. Orders submitted by any cl
 
 Example Testing Steps
 
-	1.	Client 1 Submits a Buy Order
+1.	Client 1 Submits a Buy Order
 
 {"id":"order-001","clientId":"client_1","type":"buy","price":100,"quantity":10}
 
 
-	2.	Client 2 Submits a Sell Order
+2.	Client 2 Submits a Sell Order
 
 {"id":"order-002","clientId":"client_2","type":"sell","price":95,"quantity":5}
 
 
-	3.	Verify Order Book Across Clients
+3.	Verify Order Book Across Clients
 Check each client’s terminal to ensure both orders are present in their local order books.
 
 Automated Testing
@@ -190,46 +185,46 @@ If you encounter issues while running or testing the application, refer to the f
 
 Common Issues
 
-	1.	ECONNREFUSED Errors
+1.	ECONNREFUSED Errors
 
 Error broadcasting order update: Error: ERR_REQUEST_GENERIC: connect ECONNREFUSED 127.0.0.1:<PORT>
 
 Cause: The application is attempting to connect to a Grenache peer on localhost at the specified port, but no service is listening on that port.
 Solutions:
-	•	Ensure Grenache Router is Running: Verify that the Grenache router is active.
+•	Ensure Grenache Router is Running: Verify that the Grenache router is active.
 
 # Check if the router is listening on port 30001
 lsof -i -P -n | grep LISTEN | grep 30001
 
 
-	•	Start All Client Instances: Make sure all client instances are running on their respective ports.
-	•	Verify Port Configuration: Confirm that the ports specified in the .env file match the ports clients are using.
-	•	Check Firewall Settings: Ensure that your firewall isn’t blocking the necessary ports.
+•	Start All Client Instances: Make sure all client instances are running on their respective ports.
+•	Verify Port Configuration: Confirm that the ports specified in the .env file match the ports clients are using.
+•	Check Firewall Settings: Ensure that your firewall isn’t blocking the necessary ports.
 
-	2.	Port Conflicts
+2.	Port Conflicts
 Cause: Another application is using the required port.
 Solutions:
-	•	Identify Conflicting Application:
+•	Identify Conflicting Application:
 
 lsof -i -P -n | grep LISTEN | grep <PORT>
 
+•	Change Port Configuration: Update the .env file and client startup commands to use different ports.
 
-	•	Change Port Configuration: Update the .env file and client startup commands to use different ports.
-
-	3.	Service Crashes
+3.	Service Crashes
 Cause: Grenache or client instances may crash due to unhandled errors.
 Solutions:
-	•	Check Service Logs: Review the terminal output for error messages.
-	•	Ensure Proper Dependencies: Make sure all Node.js dependencies are installed correctly.
-	4.	Invalid Order Formats
+•	Check Service Logs: Review the terminal output for error messages.
+•	Ensure Proper Dependencies: Make sure all Node.js dependencies are installed correctly.
+
+4.	Invalid Order Formats
 Cause: Orders submitted with incorrect JSON structure or missing fields.
 Solutions:
-	•	Validate JSON: Ensure that all required fields (id, clientId, type, price, quantity) are present and correctly formatted.
-	•	Use JSON Validators: Utilize online tools or IDE extensions to validate JSON syntax.
+•	Validate JSON: Ensure that all required fields (id, clientId, type, price, quantity) are present and correctly formatted.
+•	Use JSON Validators: Utilize online tools or IDE extensions to validate JSON syntax.
 
 Additional Tips
 
-	•	Restart Services: Sometimes, simply restarting the Grenache router and all client instances can resolve connectivity issues.
-	•	Update Dependencies: Ensure all Node.js packages are up-to-date.
+•	Restart Services: Sometimes, simply restarting the Grenache router and all client instances can resolve connectivity issues.
+•	Update Dependencies: Ensure all Node.js packages are up-to-date.
 
 npm update
