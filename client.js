@@ -12,7 +12,6 @@ const CLIENT_ID_PREFIX = args.clientId || 'client';
 
 // Define service names as top-level constants
 const ORDERBOOK_SERVICE = 'orderbook_service';
-const ORDER_UPDATE_SERVICE = 'order_update_service';
 
 // Instantiate Link
 const link = new Link({
