@@ -21,12 +21,16 @@ const LOCK_SERVICE = 'lock_service';
 
 setInterval(() => {
   link.announce(LOCK_SERVICE, service.port, {});
+  console.log('Lock service link connected.');
 }, 1000);
 
 // Handle lock requests
 service.on('request', (rid, key, payload, handler) => {
+  console.log(`Received request: ${JSON.stringify(payload)}`);
   const { action, orderId } = payload;
-  if (action === 'acquire') {
+  if (action === 'test') {
+    handler.reply(null, { success: true, message: 'Lock service is reachable' });
+  } else if (action === 'acquire') {
     if (locks.has(orderId)) {
       handler.reply(null, { success: false });
     } else {
