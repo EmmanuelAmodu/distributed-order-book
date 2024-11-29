@@ -120,7 +120,7 @@ function registerClient(clientId, port) {
 }
 
 // Function to apply a delta to the local order book
-function applyDelta(delta) {
+async function applyDelta(delta) {
   if (delta.type === 'add') {
     const { order, index } = delta;
     if (order.type === 'buy') {
@@ -128,12 +128,36 @@ function applyDelta(delta) {
     } else if (order.type === 'sell') {
       orderBook.sells[index] = order;
     }
+
     console.log(`Order added: ${JSON.stringify(order)}`);
   } else if (delta.type === 'match') {
     const { buyOrderId, sellOrderId, quantity, price, buyer, seller } = delta;
-    // Implement matching logic on the client-side if necessary
+    const buyOrderIndex = orderBook.buys.findIndex((order) => order.id === buyOrderId);
+    const sellOrderIndex = orderBook.sells.findIndex((order) => order.id === sellOrderId);
+
+    if (buyOrderIndex === -1 || sellOrderIndex === -1) return;
+    const buyOrder = orderBook.buys[buyOrderIndex];
+    const sellOrder = orderBook.sells[sellOrderIndex];
+
+    if (buyOrder.quantity - quantity === 0) {
+      orderBook.buys = orderBook.buys.filter((order) => order.id !== buyOrderId);
+    }
+
+    if (sellOrder.quantity - quantity === 0) {
+      orderBook.sells = orderBook.sells.filter((order) => order.id !== sellOrderId);
+    }
+
+    orderBook.buys[buyOrderIndex] = {
+      ...buyOrder,
+      quantity: buyOrder.quantity - quantity,
+    };
+
+    orderBook.sells[sellOrderIndex] = {
+      ...sellOrder,
+      quantity: sellOrder.quantity - quantity,
+    };
+
     console.log(`Order matched: ${quantity} @ ${price} between ${buyer} and ${seller}`);
-    // Optionally, update or remove orders from the local order book
   }
 }
 

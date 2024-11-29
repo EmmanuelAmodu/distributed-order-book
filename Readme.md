@@ -75,11 +75,12 @@ Create a .env file in the project root to configure necessary environment variab
 GRENACHE_ROUTER_URL=http://127.0.0.1:30001
 
 # Ports for clients (ensure these ports are free)
-CLIENT_1_PORT=1139
-CLIENT_2_PORT=1398
-CLIENT_3_PORT=1716
-CLIENT_4_PORT=1825
-CLIENT_5_PORT=1934
+
+  CLIENT_1_PORT=1139
+  CLIENT_2_PORT=1398
+  CLIENT_3_PORT=1716
+  CLIENT_4_PORT=1825
+  CLIENT_5_PORT=1934
 
 Adjust the ports as needed, ensuring they do not conflict with other services on your machine.
 
@@ -91,25 +92,25 @@ Start Client Instances
 
 Open separate terminal windows or tabs for each client and navigate to the project directory.
 
-1.	Client 1
+1. Client 1
 
-PORT=1139 npm run client -- client_1
+  `PORT=1139 npm run client -- client_1`
 
-2.	Client 2
+2. Client 2
 
-PORT=1398 npm run client -- client_2
+  `PORT=1398 npm run client -- client_2`
 
 3.	Client 3
 
-PORT=1716 npm run client -- client_3
+  `PORT=1716 npm run client -- client_3`
 
 4.	Client 4
 
-PORT=1825 npm run client -- client_4
+  `PORT=1825 npm run client -- client_4`
 
 5.	Client 5
 
-PORT=1934 npm run client -- client_5
+`PORT=1934 npm run client -- client_5`
 
 Ensure each client is started with the correct port as specified in the .env file.
 
@@ -194,37 +195,36 @@ Solutions:
 •	Ensure Grenache Router is Running: Verify that the Grenache router is active.
 
 # Check if the router is listening on port 30001
-lsof -i -P -n | grep LISTEN | grep 30001
+  `lsof -i -P -n | grep LISTEN | grep 30001`
 
-
-•	Start All Client Instances: Make sure all client instances are running on their respective ports.
-•	Verify Port Configuration: Confirm that the ports specified in the .env file match the ports clients are using.
-•	Check Firewall Settings: Ensure that your firewall isn’t blocking the necessary ports.
+  •	Start All Client Instances: Make sure all client instances are running on their respective ports.
+  •	Verify Port Configuration: Confirm that the ports specified in the .env file match the ports clients are using.
+  •	Check Firewall Settings: Ensure that your firewall isn’t blocking the necessary ports.
 
 2.	Port Conflicts
 Cause: Another application is using the required port.
 Solutions:
-•	Identify Conflicting Application:
+  •	Identify Conflicting Application:
 
-lsof -i -P -n | grep LISTEN | grep <PORT>
+    `lsof -i -P -n | grep LISTEN | grep <PORT>`
 
-•	Change Port Configuration: Update the .env file and client startup commands to use different ports.
+  •	Change Port Configuration: Update the .env file and client startup commands to use different ports.
 
 3.	Service Crashes
 Cause: Grenache or client instances may crash due to unhandled errors.
 Solutions:
-•	Check Service Logs: Review the terminal output for error messages.
-•	Ensure Proper Dependencies: Make sure all Node.js dependencies are installed correctly.
+  •	Check Service Logs: Review the terminal output for error messages.
+  •	Ensure Proper Dependencies: Make sure all Node.js dependencies are installed correctly.
 
 4.	Invalid Order Formats
 Cause: Orders submitted with incorrect JSON structure or missing fields.
+
 Solutions:
-•	Validate JSON: Ensure that all required fields (id, clientId, type, price, quantity) are present and correctly formatted.
-•	Use JSON Validators: Utilize online tools or IDE extensions to validate JSON syntax.
+  •	Validate JSON: Ensure that all required fields (id, clientId, type, price, quantity) are present and correctly formatted.
+  •	Use JSON Validators: Utilize online tools or IDE extensions to validate JSON syntax.
 
 Additional Tips
-
-•	Restart Services: Sometimes, simply restarting the Grenache router and all client instances can resolve connectivity issues.
-•	Update Dependencies: Ensure all Node.js packages are up-to-date.
+  •	Restart Services: Sometimes, simply restarting the Grenache router and all client instances can resolve connectivity issues.
+  •	Update Dependencies: Ensure all Node.js packages are up-to-date.
 
 npm update
