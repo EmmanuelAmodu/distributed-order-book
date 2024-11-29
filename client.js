@@ -4,18 +4,15 @@ const OrderBook = require('./orderbook');
 const { v4: uuidv4 } = require('uuid');
 const minimist = require('minimist');
 
-// Parse command-line arguments
 const args = minimist(process.argv.slice(2));
 const NUM_ORDERS = Number.parseInt(args.orders, 10) || 100; // Number of orders to submit
 const ORDER_INTERVAL = Number.parseInt(args.interval, 10) || 100; // Interval between orders in ms
 const CLIENT_ID_PREFIX = args.clientId || 'client';
 
-// Define service names as top-level constants
 const ORDERBOOK_SERVICE = 'orderbook_service';
 
-// Instantiate Link
 const link = new Link({
-  grape: 'http://127.0.0.1:30001', // Replace with your Grape server address
+  grape: 'http://127.0.0.1:30001',
 });
 console.log('Instantiated Link:', link);
 
@@ -24,20 +21,13 @@ link.start();
 
 // Function to broadcast an order update
 async function broadcastOrderUpdate(delta) {
-  // Implement broadcasting logic here, e.g., send to all connected peers
-  // Using 'map' to broadcast to all instances of ORDERBOOK_SERVICE
-  peerClient.map(
-    ORDERBOOK_SERVICE,
-    { type: 'delta', delta },
-    { timeout: 10000 },
-    (err) => {
-      if (err) {
-        console.error('Error broadcasting order update:', err);
-      } else {
-        console.log(`Order update broadcast: ${JSON.stringify(delta)}`);
-      }
+  peerClient.request(ORDERBOOK_SERVICE, { type: 'delta', delta }, { timeout: 10000 }, (err, data) => {
+    if (err) {
+      console.error('Error broadcasting order update:', err);
+    } else {
+      console.log(`Order update broadcast: ${JSON.stringify(data)}`);
     }
-  );
+  });
 }
 
 // Initialize PeerRPCClient to communicate with Order Book Server
@@ -188,7 +178,6 @@ function submitOrders(peerClient, clientId, numOrders, interval) {
   const orderSubmission = setInterval(async () => {
     if (ordersSubmitted >= numOrders) {
       clearInterval(orderSubmission);
-      // Optionally, report metrics or exit the process
       console.log(`All ${numOrders} orders submitted by ${clientId}`);
       return;
     }
