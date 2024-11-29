@@ -1,14 +1,15 @@
 {
   "name": "distributed-order-book",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "A distributed order book application using Grenache for P2P communication.",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node loadTest.js",
+    "client": "node client.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "async-mutex": "^0.5.0",
     "grenache-nodejs-http": "^0.7.13",
