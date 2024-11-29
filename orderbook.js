@@ -2,7 +2,7 @@ class OrderBook {
   constructor() {
     this.buys = [];
     this.sells = [];
-    this.processedOrders = new Set(); // Track processed orders to avoid duplicates
+    this.processedOrders = new Set(); // Track processed orders
   }
 
   addOrder(order) {
