@@ -1,11 +1,9 @@
-// orderbook.js
 const { Mutex } = require('async-mutex');
 const EventEmitter = require('node:events');
-const crypto = require('node:crypto');
 
 class OrderBook extends EventEmitter {
   /**
-   * Initializes the OrderBook with internal locking, event emission, and ledger.
+   * Initializes the OrderBook with internal locking and event emission.
    * @param {Function} broadcastOrderUpdateFn - Function to broadcast an order update.
    */
   constructor(broadcastOrderUpdateFn) {
@@ -14,48 +12,15 @@ class OrderBook extends EventEmitter {
     this.sells = [];
     this.broadcastOrderUpdate = broadcastOrderUpdateFn;
     this.mutex = new Mutex(); // Mutex for synchronizing access
-    this.ledger = []; // Ledger to keep track of transactions
 
     // Listen to internal events to trigger broadcasting
     this.on('orderAdded', (order, index) => {
-      this.recordLedger({ type: 'add', order, index });
       this.broadcastOrderUpdate({ type: 'add', order, index });
     });
 
     this.on('orderMatched', (matchDetails) => {
-      this.recordLedger({ type: 'match', ...matchDetails });
-      this.broadcastOrderUpdate({ type: 'match', ...matchDetails });
+      this.broadcastOrderUpdate({ type: 'match', matchDetails });
     });
-  }
-
-  /**
-   * Records an update to the ledger with a timestamp and hash.
-   * @param {Object} update - The update to record.
-   */
-  recordLedger(update) {
-    const timestamp = new Date().toISOString();
-    this.ledger.push({ timestamp, update });
-
-    // Compute the current hash of the order book
-    const currentHash = this.computeHash();
-    this.ledger[this.ledger.length - 1].hash = currentHash;
-
-    console.log(`Ledger Updated at ${timestamp}:`, update);
-    console.log(`Current Order Book Hash: ${currentHash}`);
-  }
-
-  /**
-   * Computes a SHA-256 hash of the current order book state.
-   * @returns {string} - The computed hash in hexadecimal format.
-   */
-  computeHash() {
-    const hash = crypto.createHash('sha256');
-    const orderBookState = JSON.stringify({
-      buys: this.buys,
-      sells: this.sells,
-    });
-    hash.update(orderBookState);
-    return hash.digest('hex');
   }
 
   /**
@@ -162,22 +127,6 @@ class OrderBook extends EventEmitter {
       buys: this.buys,
       sells: this.sells,
     };
-  }
-
-  /**
-   * Returns the current hash of the order book.
-   * @returns {string} - The current hash.
-   */
-  getCurrentHash() {
-    return this.computeHash();
-  }
-
-  /**
-   * Returns the ledger.
-   * @returns {Array} - The ledger entries.
-   */
-  getLedger() {
-    return this.ledger;
   }
 }
 

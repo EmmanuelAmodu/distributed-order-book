@@ -4,4 +4,4 @@ node_modules
 bin
 local
 dev.ts
-*.log
+logs
