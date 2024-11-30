@@ -30,7 +30,7 @@ async function broadcastOrderUpdate(delta) {
   });
 }
 
-// Initialize PeerRPCClient to communicate with Order Book Server
+// Initialize PeerRPCClient to communicate with other nnodes
 const peerClient = new PeerRPCClient(link, {});
 peerClient.init();
 
@@ -54,9 +54,6 @@ function startClientOperations() {
   setInterval(() => {
     link.announce(ORDERBOOK_SERVICE, service.port, {});
   }, 1000);
-
-  // Register the client with the Order Book Server for updates
-  registerClient(clientId, port);
 
   // Handle incoming deltas from the Order Book Server
   service.on('request', async (rid, key, payload, handler) => {
@@ -85,29 +82,6 @@ function startClientOperations() {
   }, 10000);
 }
 
-// Function to register the client with the Order Book Server
-function registerClient(clientId, port) {
-  peerClient.request(
-    ORDERBOOK_SERVICE,
-    {
-      type: 'register_client',
-      clientInfo: {
-        host: '127.0.0.1', // Replace with your client host if different
-        port: port,
-        clientId: clientId,
-      },
-    },
-    { timeout: 5000 },
-    (err, data) => {
-      if (err) {
-        console.error('Error registering client:', err);
-      } else {
-        console.log('Client registration successful:', data);
-      }
-    }
-  );
-}
-
 // Function to apply a delta to the local order book
 async function applyDelta(delta) {
   if (delta.type === 'add') {
@@ -129,11 +103,11 @@ async function applyDelta(delta) {
     const sellOrder = orderBook.sells[sellOrderIndex];
 
     if (buyOrder.quantity - quantity === 0) {
-      orderBook.buys = orderBook.buys.filter((order) => order.id !== buyOrderId);
+      orderBook.buys.splice(buyOrderIndex, 1);
     }
 
     if (sellOrder.quantity - quantity === 0) {
-      orderBook.sells = orderBook.sells.filter((order) => order.id !== sellOrderId);
+      orderBook.sells.splice(sellOrderIndex, 1);
     }
 
     orderBook.buys[buyOrderIndex] = {
