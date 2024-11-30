@@ -1,4 +1,3 @@
-// client.js
 const { PeerRPCServer, PeerRPCClient } = require('grenache-nodejs-http');
 const Link = require('grenache-nodejs-link');
 const OrderBook = require('./orderbook');
@@ -28,13 +27,25 @@ peerClient.init();
 // Initialize OrderBook with broadcast function
 const orderBook = new OrderBook(broadcastOrderUpdate);
 
-// Function to broadcast the current hash and timestamp
+// Function to broadcast the current order delta
 async function broadcastOrderUpdate(delta) {
-  // Compute the current hash after the update
+  peerClient.request(
+    ORDERBOOK_SERVICE,
+    { type: 'delta', delta },
+    { timeout: 10000 },
+    (err, data) => {
+      if (err) {
+        console.error('Error broadcasting order delta:', err);
+      } else {
+        console.log(`Order delta broadcasted: ${JSON.stringify(delta)}`);
+      }
+    }
+  );
+
+  // Additionally, broadcast the current hash and timestamp
   const currentHash = orderBook.getCurrentHash();
   const timestamp = new Date().toISOString();
 
-  // Broadcast only the hash and timestamp
   peerClient.request(
     ORDERBOOK_SERVICE,
     { type: 'hash_broadcast', hash: currentHash, timestamp },
@@ -69,13 +80,7 @@ function requestFullOrderBook() {
 
 // Function to handle incoming hash broadcasts
 function handleIncomingHash(payload, handler) {
-  const { type, hash, timestamp } = payload;
-
-  if (type !== 'hash_broadcast') {
-    handler.reply(new Error('Invalid message type for hash broadcast.'));
-    return;
-  }
-
+  const { hash, timestamp } = payload;
   const localHash = orderBook.getCurrentHash();
 
   console.log(`Received hash: ${hash} at ${timestamp}`);
@@ -102,6 +107,14 @@ peerServer.on('request', async (rid, key, payload, handler) => {
   const { type } = payload;
 
   switch (type) {
+    case 'delta': {
+      const { delta } = payload;
+      await applyDelta(delta);
+      console.log(`Received delta: ${JSON.stringify(delta)}`);
+      handler.reply(null, { status: 'delta_received' });
+      break;
+    }
+
     case 'hash_broadcast':
       handleIncomingHash(payload, handler);
       break;
@@ -115,14 +128,6 @@ peerServer.on('request', async (rid, key, payload, handler) => {
       synchronizeOrderBook(orderBookData);
       console.log('Received full order book sync.');
       handler.reply(null, { status: 'full_sync_received' });
-      break;
-    }
-
-    case 'delta': {
-      const delta = payload.delta;
-      await applyDelta(delta);
-      console.log(`Received delta: ${JSON.stringify(delta)}`);
-      handler.reply(null, { status: 'delta_received' });
       break;
     }
 

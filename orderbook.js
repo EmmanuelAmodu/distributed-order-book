@@ -1,4 +1,3 @@
-// orderbook.js
 const { Mutex } = require('async-mutex');
 const EventEmitter = require('node:events');
 const crypto = require('node:crypto');
@@ -103,6 +102,8 @@ class OrderBook extends EventEmitter {
         (order.type === 'sell' && order.price <= oppositeOrder.price);
 
       const isDifferentClient = order.clientId !== oppositeOrder.clientId;
+
+      console.log("Order to be compared", order.clientId, oppositeOrder.clientId);
 
       if (isPriceMatch && isDifferentClient) {
         // Perform the match
